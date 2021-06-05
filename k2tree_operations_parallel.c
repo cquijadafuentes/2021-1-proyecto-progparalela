@@ -1,5 +1,12 @@
 #include "k2tree_operations.h"
 
+/*
+
+POROTITA TE QUIERO MUCHO!
+
+*/
+
+
 ulong * posByLevel_parallel(MREP * X){
 	//Calcula las posiciones del bitmap en las comienza cada nivel de X
 	ulong * pX = (ulong *) malloc(sizeof(ulong) * (X->maxLevel + 1));
