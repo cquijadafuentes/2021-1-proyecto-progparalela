@@ -40,7 +40,7 @@ int main(int argc, char* argv[]){
   
   fprintf(stderr,"--------------\n");
   fprintf(stderr,"Range: [%d,%d]-[%d,%d], total of links %d\n",p1,p2,q1,q2,respuesta[0][0]);
- for(i=0;i<respuesta[0][0];i++)
+ 	for(i=0;i<respuesta[0][0];i++)
   	fprintf(stderr,"(%d,%d)\t",respuesta[0][i+1],respuesta[1][i+1]);  
 	fprintf(stderr,"\n");
 	
