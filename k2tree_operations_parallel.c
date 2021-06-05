@@ -1,5 +1,23 @@
 #include "k2tree_operations.h"
 
+ulong * posByLevel_parallel(MREP * X){
+	//Calcula las posiciones del bitmap en las comienza cada nivel de X
+	ulong * pX = (ulong *) malloc(sizeof(ulong) * (X->maxLevel + 1));
+	if(pX == NULL){
+		printf("Error en al reserva de memoria.\n");
+		return NULL;
+	}
+	pX[0]=0;
+	if(X->maxLevel>=1){
+		pX[1]=K*K;
+	}	
+	uint i = 0;
+	for(i=2; i<= X->maxLevel; i++){
+		pX[i] = rank(X->btl, pX[i-1]-1) * (K*K) + (K*K);
+	}
+	return pX;
+}
+
 uint intersectionOperation_parallel(uint l, MREP * A, MREP * B, ulong * pA, ulong * pB, misBits * C){
 	// Operación de intersección sobre 2 representaciones de l niveles cada una
 	// donde pA y pB son las posiciones por nivel y C es el bitmap para el resultado
@@ -46,12 +64,18 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 	printf("En la operación paralela\n");
 
 
-	// Algoritmo que retorna el resultado de la operación de Intersección
+	// Algoritmo que retorna el resultado de la operación de Intersección de manera paralela para k=2
 	// recibiendo como parámetros las dos representaciones de k2tree a operar.
 	// Calcula y genera los elementos adionales que necesita el algoritmo intersectionOperation.
 	uint maximalLevel = repA->maxLevel;	
-	ulong * pRepA = posByLevel(repA);
-	ulong * pRepB = posByLevel(repB);	
+/*
+	La estrategia inicial corresponde a calcular cada sub-árbol que define el nodo raíz de manera paralela
+	Esto supone que se tendrán, por cada representación 4 listas de posiciones iniciales
+	Y también 4 sub-árboles de resultado 
+*/
+	ulong ** pRepA = posByLevel_parallel(repA);
+	ulong ** pRepB = posByLevel_parallel(repB);	
+	//<--------------------------------------------
 	ulong * minBits = (ulong *) malloc(sizeof(ulong)*(maximalLevel+1));
 	
 	if(minBits == NULL){
