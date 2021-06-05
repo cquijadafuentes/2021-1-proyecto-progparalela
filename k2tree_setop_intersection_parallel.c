@@ -7,6 +7,7 @@ int main(int argc, char * argv[]){
 		fprintf(stderr,"USAGE: %s <GRAPH> <GRAPH> <GRAPH>\n", argv[0]);
 		return(-1);
 	}
+	
 
 	printf("Entrando a operación paralela\n");
 
