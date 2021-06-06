@@ -14,7 +14,7 @@ DEST=.
 %.o: %.c
 	$(CPP) $(CPPFLAGS) -c $< -o $@
 
-all: bin
+all: clean bin
 
 bin: $(OBJECTS) $(BINS)
 

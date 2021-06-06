@@ -7,20 +7,27 @@ POROTITA TE QUIERO MUCHO!
 */
 
 
-ulong * posByLevel_parallel(MREP * X){
-	//Calcula las posiciones del bitmap en las comienza cada nivel de X
-	ulong * pX = (ulong *) malloc(sizeof(ulong) * (X->maxLevel + 1));
+ulong ** posByLevel_parallel(MREP * X){
+	//	Calcula las posiciones del bitmap para cada sub-árbol
+	// Filas = una por cada subarbol al primer nivel
+	// Columnas = si el subarbol es 0, el puntero es NULL
+	// 			  sino el puntero tiene (maxLevel) elementos
+	ulong kk = K*K;
+	ulong ** pX = (ulong **) malloc(sizeof(ulong*) * (kk));
 	if(pX == NULL){
 		printf("Error en al reserva de memoria.\n");
 		return NULL;
 	}
-	pX[0]=0;
-	if(X->maxLevel>=1){
-		pX[1]=K*K;
-	}	
-	uint i = 0;
-	for(i=2; i<= X->maxLevel; i++){
-		pX[i] = rank(X->btl, pX[i-1]-1) * (K*K) + (K*K);
+	for(int j=0; j<kk; j++){
+		if(isBitSet(X->btl, j)){
+			pX[j] = (ulong *) malloc(sizeof(ulong) * X->maxLevel + 1);
+			pX[j][0] = j;
+			for(int i=1; i <= X->maxLevel; i++){
+				pX[j][i] = rank(X->btl, pX[j][i-1]-1) * (kk) + (kk);
+			}
+		}else{
+			pX[j] = NULL;
+		}
 	}
 	return pX;
 }
@@ -68,7 +75,7 @@ uint intersectionOperation_parallel(uint l, MREP * A, MREP * B, ulong * pA, ulon
 
 MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 
-	printf("En la operación paralela\n");
+	printf("En la operación paralela   asdfasdf\n");
 
 
 	// Algoritmo que retorna el resultado de la operación de Intersección de manera paralela para k=2
@@ -80,8 +87,8 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 	Esto supone que se tendrán, por cada representación 4 listas de posiciones iniciales
 	Y también 4 sub-árboles de resultado 
 */
-	ulong ** pRepA = posByLevel_parallel(repA);
-	ulong ** pRepB = posByLevel_parallel(repB);	
+	ulong * pRepA = posByLevel(repA);
+	ulong * pRepB = posByLevel(repB);	
 	//<--------------------------------------------
 	ulong * minBits = (ulong *) malloc(sizeof(ulong)*(maximalLevel+1));
 	
@@ -117,6 +124,98 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 	intersectionOperation(0u, repA, repB, pRepA, pRepB, C);
 	ulong vinculolos = concatenar(C);	
 	ulong numNodos = repA->numberOfNodes;
+
+//	**************** IMPLEMENTACIÓN PARALELA ****************
+	int kk = K*K;
+	/*
+		1 - Generar las posiciones para cada sub-árbol de las entradas
+	*/
+
+	// Filas = una por cada subarbol al primer nivel
+	// Columnas = si el subarbol es 0, el puntero es NULL
+	// 			  sino el puntero tiene (maxLevel-1) elementos
+	ulong ** pRepA_parallel = posByLevel_parallel(repA);
+	ulong ** pRepB_parallel = posByLevel_parallel(repB);
+
+	if(pRepA_parallel == NULL){
+		printf("Error! en cálculo de pRepA_parallel\n");
+	}else{
+		printf("pRepA_parallel:\n");
+		for(int i=0; i<kk; i++){
+			if(pRepA_parallel[i] == NULL){
+				printf("NULL\n");
+			}else{
+				for(int j=0; j <= repA->maxLevel; j++){
+					printf("%ld ", pRepA_parallel[i][j]);
+				}
+				printf("\n");
+			}
+		}
+	}
+	if(pRepB_parallel == NULL){
+		printf("Error! en cálculo de pRepB_parallel\n");
+	}else{
+		printf("pRepB_parallel:\n");
+		for(int i=0; i<kk; i++){
+			if(pRepB_parallel[i] == NULL){
+				printf("NULL\n");
+			}else{
+				for(int j=0; j <= repA->maxLevel; j++){
+					printf("%ld ", pRepB_parallel[i][j]);
+				}
+				printf("\n");
+			}
+		}
+	}
+
+	/*
+		2 - Generar la estructura para el resultado de la intersección
+	*/
+
+	// 	El bitmap para el resultado contendrá el resultado de intersectar
+	//	los K*K sub-árboles con los que se trabaja.
+	//	En esta primera etapa, se genera espacio suficiente para los sub-árbol completos
+
+	ulong * minimosBits = (ulong *) malloc(sizeof(ulong) * (maximalLevel + 1));
+	if(minimosBits == NULL){
+		printf("Error! En reserva de memoria para minimosBits.\n");
+		return NULL;
+	}
+
+	minimosBits[0] = 1;
+	for(int i=1; i<=maximalLevel; i++){
+		minimosBits[i] = minimosBits[i-1] * kk;
+	}
+
+	
+	printf("minimosBits: \n");
+	for(int i=0; i<=maximalLevel; i++){
+		printf("%ld \n", minimosBits[i]);
+	}
+	printf("\n");
+
+
+	misBits** R = (misBits**) malloc(sizeof(misBits*) * kk);
+	if(R == NULL){
+		printf("Error! en la reserva de memoria de misBits\n");
+	}
+
+	for(int i=0; i<kk; i++){
+		R[i] = nuevoBitMap(maximalLevel+1, minimosBits);
+	}
+
+	/*
+		3 - Ejecutar la operación en un for paralelo por cada sub-árbol
+			usando su respectiva sub-estructura y arreglo de posiciones
+			para cada caso
+	*/
+	uint resInter;
+	for(int i=0; i<kk; i++){
+		resInter = intersectionOperation(1u, pRepA_parallel[i], pRepB_parallel[i], pRepA, pRepB, R[i]);
+		setBit(R[i], 0, resInter);
+	}
+
+//	************** FIN IMPLEMENTACIÓN PARALELA **************
 
 	return createFromBitmap(C, maximalLevel, numNodos, vinculolos);
 }

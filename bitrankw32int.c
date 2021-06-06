@@ -79,8 +79,7 @@ uint rank(bitRankW32Int * br, uint i) {
 }
 
 
-uint isBitSet(bitRankW32Int * br, uint i) 
-{
+uint isBitSet(bitRankW32Int * br, uint i) {
   return (1u << (i % W)) & br->data[i/W];
 }
 
