@@ -115,7 +115,7 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 	}
 
 	intersectionOperation(0u, repA, repB, pRepA, pRepB, C);
-	ulong vinculolos = concatenar(C);	
+	ulong vinculolos = concatenar(C);
 	ulong numNodos = repA->numberOfNodes;
 
 //	**************** IMPLEMENTACIÓN PARALELA ****************
@@ -252,18 +252,38 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 		}
 	}
 
+	ulong edgesF = 0;
+	for(int i=0; i<kk; i++){
+		if(R[i] != NULL){
+			edgesF += R[i]->numEdges;
+		}
+	}
+
 	printf("Comparando bitmaps...\n");
 	if(C->cant != Rfinal->cant){
 		printf("Diferencia en cantidad de elementos\n");
+	}else{
+		printf("Misma cantidad de elementos (bits)\n");
 	}
 	for(int i=0; i<C->cant && i<Rfinal->cant; i++){
 		if(isBitSeted(C, 0u, i) != isBitSeted(Rfinal, 0u, i)){
 			printf("Diferencia en el bit %d\n", i);
 		}
 	}
+	if(edgesF != vinculolos){
+		printf("Diferente cantidad de edges.\n");
+	}else{
+		printf("Misma cantidad de edges!\n");
+	}
 
+
+	/*
+		5 -	Construir estructura con resultado final
+	*/
+
+	return createFromBitmap(Rfinal, maximalLevel, numNodos, edgesF);
 
 //	************** FIN IMPLEMENTACIÓN PARALELA **************
 
-	return createFromBitmap(C, maximalLevel, numNodos, vinculolos);
+	//return createFromBitmap(C, maximalLevel, numNodos, vinculolos);
 }
