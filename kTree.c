@@ -377,7 +377,7 @@ void destroyRepresentation(MREP * rep){
 uint * compactAdjacencyList(MREP * rep, int x){
 	rep->iniq=-1;
 	rep->finq=-1;
-	uint nleaf,posInf, nleafrelat;
+	uint posInf;
 	uint totalAdyNodes =0;
 	int i, k, j, queuecont, conttmp,node,div_level,xrelat;
 	AddItem2(rep,0,0,x);
@@ -423,7 +423,7 @@ uint * compactAdjacencyList(MREP * rep, int x){
 uint * compactInverseList(MREP * rep, int y){
 	rep->iniq=-1;
 	rep->finq=-1;
-	uint nleaf,posInf, nleafrelat;
+	uint posInf;
 
 	uint totalAdyNodes =0;
 	int i, k, j, queuecont, conttmp,node,div_level,yrelat;
@@ -470,7 +470,7 @@ uint * compactInverseList(MREP * rep, int y){
 
 
 void recursiveAdjacencyList(MREP * rep, uint node, uint basex, uint basey, uint level){
-	uint nleaf,posInf, nleafrelat;
+	uint posInf;
 	int i, j,div_level,xrelat,newnode;
 	if(level<rep->maxLevel){	
 		div_level = exp_pow(K,rep->maxLevel-level);
@@ -580,7 +580,7 @@ uint ** compactRangeQuery(MREP * rep, uint p1, uint p2, uint q1, uint q2){
 
 uint recursiveCheckLinkQuery(MREP * rep, uint p, uint q, uint node, uint level);
 uint recursiveCheckLinkQuery(MREP * rep, uint p, uint q, uint node, uint level){
-	uint nleaf,posInf, nleafrelat;
+	uint posInf;
 
 	int div_level,newnode;
 
@@ -749,7 +749,7 @@ uint compactCheckLinkQuery(MREP * rep, uint p, uint q){
 void recursiveDecompression(MREP * rep, uint * tmp_in, uint * tmp_out, ulong * tmp_p, ulong * sizein, uint dp, uint dq,uint x,int l);
 
 void recursiveDecompression(MREP * rep, uint * tmp_in, uint * tmp_out, ulong * tmp_p, ulong * sizein, uint dp, uint dq,uint x,int l){
-	int i,j,leaf;
+	int i,j;
 	uint y, divlevel;
 	if(l==rep->maxLevel){	
 			if(bitget(rep->btl->data,x)){

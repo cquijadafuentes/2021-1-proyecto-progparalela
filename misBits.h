@@ -10,13 +10,13 @@
 */
 
 typedef struct MISBITS{
-	ulong * pos; // Posiciones de inicio para cada nivel del bitmap
-	ulong * n; // Número de elementos de cada nivel del bitmap
-	uint niveles; // Cantidad de niveles del bitmap
-	ulong tam; // Tamaño del bitmap (Capacidad)
-	ulong cant; // Número de elementos totales del bitmap
+	ulong * pos; 	// Posiciones de inicio para cada nivel del bitmap
+	ulong * n; 		// Número de elementos de cada nivel del bitmap
+	uint niveles; 	// Cantidad de niveles del bitmap
+	ulong tam; 		// Tamaño del bitmap (Capacidad)
+	ulong cant; 	// Número de elementos totales del bitmap
 	ulong numEdges; // Número de 1s al último nivel del bitmap
-	uint * bitsm;
+	uint * bitsm;	// Bitmap
 } misBits;
 
 misBits* nuevoBitMap(uint levels, ulong * cants); 

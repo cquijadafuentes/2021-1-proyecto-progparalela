@@ -1,12 +1,5 @@
 #include "k2tree_operations.h"
 
-/*
-
-POROTITA TE QUIERO MUCHO!
-
-*/
-
-
 ulong ** posByLevel_parallel(MREP * X){
 	//	Calcula las posiciones del bitmap para cada sub-árbol
 	// Filas = una por cada subarbol al primer nivel
@@ -75,7 +68,7 @@ uint intersectionOperation_parallel(uint l, MREP * A, MREP * B, ulong * pA, ulon
 
 MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 
-	printf("En la operación paralela   asdfasdf\n");
+	printf("En la operación paralela\n");
 
 
 	// Algoritmo que retorna el resultado de la operación de Intersección de manera paralela para k=2
@@ -211,9 +204,24 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 	*/
 	uint resInter;
 	for(int i=0; i<kk; i++){
-		resInter = intersectionOperation(1u, pRepA_parallel[i], pRepB_parallel[i], pRepA, pRepB, R[i]);
+		if(pRepA_parallel[i] != NULL && pRepB_parallel[i] != NULL){
+			resInter = intersectionOperation(1u, repA, repB, pRepA_parallel[i], pRepB_parallel[i], R[i]);
+		}else{
+			resInter = 0u;
+		}
 		setBit(R[i], 0, resInter);
 	}
+
+
+	/*
+		4 -	Unificar la estructura de los resultados en el resultado
+	*/
+
+	for(int i=0; i<kk; i++){
+		
+	}
+
+
 
 //	************** FIN IMPLEMENTACIÓN PARALELA **************
 
