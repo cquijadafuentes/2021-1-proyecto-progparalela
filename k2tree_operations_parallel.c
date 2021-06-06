@@ -1,5 +1,72 @@
 #include "k2tree_operations.h"
 
+ulong bitsUsados(MREP * X, ulong** pX, int subarbol, int nivel, int kk){
+	int actual = pX[subarbol][nivel];
+	int sa = subarbol+1;
+	int n = nivel;
+	if(sa == kk){
+		sa = 0;
+		n++;
+	}
+	while(pX[sa] == NULL && n <= X->maxLevel){
+		// Este ciclo itera hasta dar con el siguiente bloque válido
+		// definidos por sa (subarbol) y n (nivel)
+		sa++;
+		if(sa == kk){
+			sa = 0;
+			n++;
+		}
+	}
+	if(n > X->maxLevel){
+		return X->btl_len - actual;
+	}
+	return pX[sa][n];
+}
+
+ulong ** minsResultadoParalelo(MREP * A, MREP * B, ulong ** pA, ulong ** pB){
+	ulong kk = K*K;
+	if(A == NULL || pA == NULL || B == NULL || pB == NULL){
+		printf("Error! argumentos nulos en funcion minsResultadoParalelo\n");
+		return NULL;
+	}
+
+	ulong ** minimos = (ulong **) malloc(sizeof(ulong*) * kk);
+	if(minimos == NULL){
+		printf("Error! en reserva de memoria de minimos (generaMinimosPosiciones)\n");
+		return NULL;
+	}
+	for(int i=0; i<kk; i++){
+		if(pA[i] == NULL || pB[i] == NULL){
+			// No hay intersección entre estos sub-árboles
+			minimos[i] = NULL;
+		}else{
+			minimos[i] = (ulong *) malloc(sizeof(ulong) * (A->maxLevel + 1));
+			if(minimos[i] == NULL){
+				printf("Error! en reserva de memoria de minimos en func minsResultadoParalelo\n");
+				return NULL;
+			}
+		}
+	}
+
+	ulong bitsMaxsNivel = 1;
+	ulong sumAB;
+	for(int j=0; j<= A->maxLevel; j++){
+		for(int i=0; i<kk; i++){
+			if(minimos[i] != NULL){
+				sumAB = bitsUsados(A, pA, i, j, kk) + bitsUsados(B, pB, i, j, kk);
+				if(sumAB < bitsMaxsNivel){
+					minimos[i][j] = sumAB;
+				}else{
+					minimos[i][j] = bitsMaxsNivel;
+				}
+			}
+		}
+		bitsMaxsNivel *= kk;
+	}
+
+	return minimos;
+}
+
 ulong ** posByLevel_parallel(MREP * X){
 	//	Calcula las posiciones del bitmap para cada sub-árbol
 	// Filas = una por cada subarbol al primer nivel
@@ -144,6 +211,7 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 				printf("\n");
 			}
 		}
+		printf("\n");
 	}
 	if(pRepB_parallel == NULL){
 		printf("Error! en cálculo de pRepB_parallel\n");
@@ -159,7 +227,9 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 				printf("\n");
 			}
 		}
+		printf("\n");
 	}
+
 
 	/*
 		2 - Generar la estructura para el resultado de la intersección
@@ -203,6 +273,34 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 
 	free(minimosBits);
 
+	/*						INICIO PRUEBA
+		PRUEBA PARA GENERAR MINIMOSBITS DEL RESULTADO PARALELO
+	*/
+
+	ulong** minBitsPar = minsResultadoParalelo(repA, repB, pRepA_parallel, pRepB_parallel);
+	if(minBitsPar == NULL){
+		printf("Error! al generar minBitsPar\n");
+	}else{
+		printf("minBitsPar:\n");
+		for(int i=0; i<kk; i++){
+			if(minBitsPar[i] == NULL){
+				printf("NULL\n");
+			}else{
+				for(int j=0; j <= repA->maxLevel; j++){
+					printf("%ld ", minBitsPar[i][j]);
+				}
+				printf("\n");
+			}
+		}
+		printf("\n");
+	}
+		
+
+	/*						 FIN PRUEBA
+		PRUEBA PARA GENERAR POSICIONES DE SUB-ÁRBOLES Y MINIMOSBITS
+		EN UNA SOLA FUNCIÓN
+	*/
+
 	/*
 		3 - Ejecutar la operación en un for paralelo por cada sub-árbol
 			usando su respectiva sub-estructura y arreglo de posiciones
@@ -218,6 +316,18 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 		setBit(R[i], 0, resInter);
 	}
 
+
+	printf("Comparando cantidad bits estimados máximos vs bits del resultado:\n");
+	for(int i=0; i<kk; i++){
+		if(minBitsPar[i]!=NULL){
+			for(int j=0; j<=maximalLevel; j++){
+				if(minBitsPar[i][j] < R[i]->n[j]){
+					printf("!!! minimos bits < resultado: subarbol: %d - nivel %d (%ld < %ld)\n", i, j, minBitsPar[i][j], R[i]->n[j]);
+				}
+			}
+		}
+	}
+	printf("\n");
 
 	/*
 		4 -	Unificar la estructura de los resultados en el resultado
