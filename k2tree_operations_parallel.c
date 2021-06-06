@@ -195,7 +195,13 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 
 	for(int i=0; i<kk; i++){
 		R[i] = nuevoBitMap(maximalLevel+1, minimosBits);
+		if(R[i] == NULL){
+			printf("Error! en reserva de misBits para resultado parcial R[%d].\n", i);
+			return  NULL;
+		}
 	}
+
+	free(minimosBits);
 
 	/*
 		3 - Ejecutar la operación en un for paralelo por cada sub-árbol
@@ -216,11 +222,45 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 	/*
 		4 -	Unificar la estructura de los resultados en el resultado
 	*/
+	// La copia del resultado es bit a bit
 
-	for(int i=0; i<kk; i++){
-		
+	minimosBits = (ulong *) malloc(sizeof(ulong));
+	minimosBits[0] = 0;
+	for(int i=0; i<=maximalLevel; i++){
+		for(int j=0; j<kk; j++){
+			if(R[j] != NULL){
+				minimosBits[0] += R[j]->n[i];
+			}
+		}
 	}
 
+	printf("minimosBits Resultado final: %ld\n", minimosBits[0]);
+
+	misBits * Rfinal = nuevoBitMap(1, minimosBits);
+	if(Rfinal == NULL){
+		printf("Error! en reserva de misBits para resultado final.\n");
+		return  NULL;
+	}
+
+	for(int i=0; i<=maximalLevel; i++){
+		for(int j=0; j<kk; j++){
+			if(R[j] != NULL){
+				for(int l=0; l<R[j]->n[i]; l++){
+					setBit(Rfinal, 0u, isBitSeted(R[j], i, l));
+				}
+			}
+		}
+	}
+
+	printf("Comparando bitmaps...\n");
+	if(C->cant != Rfinal->cant){
+		printf("Diferencia en cantidad de elementos\n");
+	}
+	for(int i=0; i<C->cant && i<Rfinal->cant; i++){
+		if(isBitSeted(C, 0u, i) != isBitSeted(Rfinal, 0u, i)){
+			printf("Diferencia en el bit %d\n", i);
+		}
+	}
 
 
 //	************** FIN IMPLEMENTACIÓN PARALELA **************

@@ -43,7 +43,7 @@ misBits* nuevoBitMap(uint levels, ulong * cants){
 
 	bitses->bitsm = (unsigned int *) malloc(sizeof(unsigned int) *(bitses->tam/W+1));
 	if(bitses->bitsm == NULL){
-		printf("Error en la reserva de memoria (Bits de misBits).\n");
+		printf("Error en la reserva de memoria (bitses de misBits).\n");
 		return NULL;
 	}
 
