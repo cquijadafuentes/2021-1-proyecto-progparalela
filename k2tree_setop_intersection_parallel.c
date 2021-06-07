@@ -118,7 +118,7 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 	//	******************* IMPLEMENTACIÓN FOR PARALELO *******************
 	#pragma omp parallel for
 	for(int i=0; i<kk; i++){
-		printf("id_thread: %d\n", omp_get_thread_num());
+//		printf("id_thread: %d\n", omp_get_thread_num());
 		if(pRepA_parallel[i] != NULL && pRepB_parallel[i] != NULL){
 			uint resInter = intersectionOperation(1u, repA, repB, pRepA_parallel[i], pRepB_parallel[i], R[i]);
 			setBit(R[i], 0, resInter);
