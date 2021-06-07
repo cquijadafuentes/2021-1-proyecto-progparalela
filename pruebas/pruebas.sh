@@ -1,20 +1,12 @@
 #!/bin/bash
 #
 
-echo '---------------------------------------------'
-echo '-------------Intersección normal-------------'
-echo '---------------------------------------------'
+echo 'Calculando intersección normal...'
 ../k2tree_setop_intersection $1 $2 inter_normal
-echo '---------------------------------------------'
-echo '------------Intersección paralela------------'
-echo '---------------------------------------------'
+echo 'Calculando intersección paralela...'
 ../k2tree_setop_intersection_parallel $1 $2 inter_paralela
-echo '---------------------------------------------'
-echo '-------------Comparando archivos-------------'
-echo '---------------------------------------------'
+echo 'Comparando archivos de la entrada'
 cmp $1.kt $2.kt
-echo '---------------------------------------------'
-echo '------------Comparando resultados------------'
-echo '---------------------------------------------'
+echo 'Comparando archivos resultado'
 cmp inter_normal.kt inter_paralela.kt
-rm inter_*
+rm inter_normal.kt inter_paralela.kt
