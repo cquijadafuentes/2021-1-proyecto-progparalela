@@ -5,14 +5,14 @@ OBJECTS=basic.o bitrankw32int.o kTree.o Entry.o NodeQueue.o Queue.o misBits.o \
 BINS=build_tree use_tree test_tree rebuild_tree invrebuild_tree revtest_tree \
 	rebuildCheck_tree fulldecompress_tree \
 	k2tree_setop_intersection adylist_setop_intersection \
-	k2tree_setop_intersection_parallel
+	k2tree_setop_intersection_parallel k2tree_setop_intersection_estrategiaparalela
 	
 #CPPFLAGS=-Wall -g3 
 CPPFLAGS=-Wall -O9 -g -DNDEBUG 
 DEST=.
 
 %.o: %.c
-	$(CPP) $(CPPFLAGS) -c $< -o $@
+	$(CPP) $(CPPFLAGS) -fopenmp -c $< -o $@
 
 all: clean bin
 
@@ -49,7 +49,10 @@ adylist_setop_intersection:
 	gcc $(CPPFLAGS) -o $(DEST)/adylist_setop_intersection adylist_setop_intersection.c $(OBJECTS) -lm
 
 k2tree_setop_intersection_parallel:
-	gcc $(CPPFLAGS) -o $(DEST)/k2tree_setop_intersection_parallel k2tree_setop_intersection_parallel.c $(OBJECTS) -lm
+	gcc $(CPPFLAGS) -fopenmp -o $(DEST)/k2tree_setop_intersection_parallel k2tree_setop_intersection_parallel.c $(OBJECTS) -lm
+
+k2tree_setop_intersection_estrategiaparalela:
+	gcc $(CPPFLAGS) -o $(DEST)/k2tree_setop_intersection_estrategiaparalela k2tree_setop_intersection_estrategiaparalela.c $(OBJECTS) -lm
 		
 clean:
 	rm -f $(OBJECTS) $(BINS)
