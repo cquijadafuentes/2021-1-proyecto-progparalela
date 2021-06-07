@@ -12,7 +12,7 @@ CPPFLAGS=-Wall -O9 -g -DNDEBUG
 DEST=.
 
 %.o: %.c
-	$(CPP) $(CPPFLAGS) -fopenmp -c $< -o $@
+	$(CPP) $(CPPFLAGS) -c $< -o $@
 
 all: clean bin
 

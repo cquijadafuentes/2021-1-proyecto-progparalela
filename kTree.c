@@ -88,7 +88,7 @@ uint exp_pow(uint base, uint pow){
 MREP * compactCreateKTree(uint * xedges, uint *yedges, uint numberOfNodes,ulong numberOfEdges, uint maxl){
 
 	MREP * rep;
-	rep = malloc(sizeof(struct matrixRep));
+	rep =(MREP *) malloc(sizeof(struct matrixRep));
 	rep->maxLevel = maxl;
 	rep->numberOfNodes = numberOfNodes;
 	rep->numberOfEdges = numberOfEdges;
