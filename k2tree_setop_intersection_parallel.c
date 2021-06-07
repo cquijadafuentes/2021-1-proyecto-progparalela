@@ -7,9 +7,6 @@ int main(int argc, char * argv[]){
 		fprintf(stderr,"USAGE: %s <GRAPH> <GRAPH> <GRAPH>\n", argv[0]);
 		return(-1);
 	}
-	
-
-	printf("Entrando a operación paralela\n");
 
 	MREP * repA = loadRepresentation(argv[1]);
 	MREP * repB = loadRepresentation(argv[2]);

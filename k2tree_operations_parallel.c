@@ -75,7 +75,7 @@ ulong ** posByLevel_parallel(MREP * X){
 	ulong kk = K*K;
 	ulong ** pX = (ulong **) malloc(sizeof(ulong*) * (kk));
 	if(pX == NULL){
-		printf("Error en al reserva de memoria.\n");
+		printf("Error en al reserva de memoria en posByLevel_parallel.\n");
 		return NULL;
 	}
 	for(int j=0; j<kk; j++){
@@ -134,59 +134,18 @@ uint intersectionOperation_parallel(uint l, MREP * A, MREP * B, ulong * pA, ulon
 
 
 MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
-
-	printf("En la operación paralela\n");
-
-
 	// Algoritmo que retorna el resultado de la operación de Intersección de manera paralela para k=2
 	// recibiendo como parámetros las dos representaciones de k2tree a operar.
 	// Calcula y genera los elementos adionales que necesita el algoritmo intersectionOperation.
-	uint maximalLevel = repA->maxLevel;	
 /*
 	La estrategia inicial corresponde a calcular cada sub-árbol que define el nodo raíz de manera paralela
 	Esto supone que se tendrán, por cada representación 4 listas de posiciones iniciales
 	Y también 4 sub-árboles de resultado 
 */
-	ulong * pRepA = posByLevel(repA);
-	ulong * pRepB = posByLevel(repB);	
-	//<--------------------------------------------
-	ulong * minBits = (ulong *) malloc(sizeof(ulong)*(maximalLevel+1));
-	
-	if(minBits == NULL){
-		printf("Se ha generado un problema...\n");
-		return NULL;
-	}
-
-	// La intersección podría tener a lo más, tantas celdas activas 
-	// como las que posee el menor de los dos elementos operados.
-
-	ulong numBitsByLevelA, numBitsByLevelB;
-	uint i;
-
-	for(i = 0; i <= maximalLevel; i++){
-		if(i==repA->maxLevel){
-			numBitsByLevelA = repA->btl_len - pRepA[i];
-			numBitsByLevelB = repB->btl_len - pRepB[i];
-		}else{
-			numBitsByLevelA = pRepA[i+1] - pRepA[i];
-			numBitsByLevelB = pRepB[i+1] - pRepB[i];
-		}
-		minBits[i] = (numBitsByLevelA > numBitsByLevelB)?numBitsByLevelB:numBitsByLevelA;
-	}
-
-	misBits * C = nuevoBitMap(maximalLevel+1, minBits);
-
-	if(C == NULL){
-		printf("Error en la reserva de memoria.\n");
-		return NULL;
-	}
-
-	intersectionOperation(0u, repA, repB, pRepA, pRepB, C);
-	ulong vinculolos = concatenar(C);
+	uint maximalLevel = repA->maxLevel;	
 	ulong numNodos = repA->numberOfNodes;
-
-//	**************** IMPLEMENTACIÓN PARALELA ****************
 	int kk = K*K;
+
 	/*
 		1 - Generar las posiciones para cada sub-árbol de las entradas
 	*/
@@ -199,107 +158,62 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 
 	if(pRepA_parallel == NULL){
 		printf("Error! en cálculo de pRepA_parallel\n");
-	}else{
-		printf("pRepA_parallel:\n");
-		for(int i=0; i<kk; i++){
-			if(pRepA_parallel[i] == NULL){
-				printf("NULL\n");
-			}else{
-				for(int j=0; j <= repA->maxLevel; j++){
-					printf("%ld ", pRepA_parallel[i][j]);
-				}
-				printf("\n");
-			}
-		}
-		printf("\n");
-	}
-	if(pRepB_parallel == NULL){
-		printf("Error! en cálculo de pRepB_parallel\n");
-	}else{
-		printf("pRepB_parallel:\n");
-		for(int i=0; i<kk; i++){
-			if(pRepB_parallel[i] == NULL){
-				printf("NULL\n");
-			}else{
-				for(int j=0; j <= repA->maxLevel; j++){
-					printf("%ld ", pRepB_parallel[i][j]);
-				}
-				printf("\n");
-			}
-		}
-		printf("\n");
-	}
-
-
-	/*
-		2 - Generar la estructura para el resultado de la intersección
-	*/
-
-	// 	El bitmap para el resultado contendrá el resultado de intersectar
-	//	los K*K sub-árboles con los que se trabaja.
-	//	En esta primera etapa, se genera espacio suficiente para los sub-árbol completos
-
-	ulong * minimosBits = (ulong *) malloc(sizeof(ulong) * (maximalLevel + 1));
-	if(minimosBits == NULL){
-		printf("Error! En reserva de memoria para minimosBits.\n");
 		return NULL;
 	}
 
-	minimosBits[0] = 1;
-	for(int i=1; i<=maximalLevel; i++){
-		minimosBits[i] = minimosBits[i-1] * kk;
-	}
-
-	
-	printf("minimosBits: \n");
-	for(int i=0; i<=maximalLevel; i++){
-		printf("%ld \n", minimosBits[i]);
-	}
-	printf("\n");
-
-
-	misBits** R = (misBits**) malloc(sizeof(misBits*) * kk);
-	if(R == NULL){
-		printf("Error! en la reserva de memoria de misBits\n");
-	}
-
-	for(int i=0; i<kk; i++){
-		R[i] = nuevoBitMap(maximalLevel+1, minimosBits);
-		if(R[i] == NULL){
-			printf("Error! en reserva de misBits para resultado parcial R[%d].\n", i);
-			return  NULL;
+	if(pRepB_parallel == NULL){
+		printf("Error! en cálculo de pRepB_parallel\n");
+		// Liberando memoria de reservas anteriores
+		for(int i=0; i<kk; i++){
+			if(pRepA_parallel[i] != NULL) free(pRepA_parallel[i]);
 		}
+		return NULL;
 	}
 
-	free(minimosBits);
-
-	/*						INICIO PRUEBA
-		PRUEBA PARA GENERAR MINIMOSBITS DEL RESULTADO PARALELO
+	/*
+		2 - Calcular los bits que podrían usar en cada nivel (por debajo del máximo)
 	*/
 
 	ulong** minBitsPar = minsResultadoParalelo(repA, repB, pRepA_parallel, pRepB_parallel);
 	if(minBitsPar == NULL){
 		printf("Error! al generar minBitsPar\n");
-	}else{
-		printf("minBitsPar:\n");
+		// Liberando memoria de reservas anteriores
 		for(int i=0; i<kk; i++){
-			if(minBitsPar[i] == NULL){
-				printf("NULL\n");
-			}else{
-				for(int j=0; j <= repA->maxLevel; j++){
-					printf("%ld ", minBitsPar[i][j]);
+			if(pRepA_parallel[i] != NULL) free(pRepA_parallel[i]);
+			if(pRepB_parallel[i] != NULL) free(pRepB_parallel[i]);
+		}
+		return NULL;
+	}
+
+	misBits** R = (misBits**) malloc(sizeof(misBits*) * kk);
+	if(R == NULL){
+		printf("Error! en la reserva de memoria de misBits\n");
+		// Liberando memoria de reservas anteriores
+		for(int i=0; i<kk; i++){
+			// Liberando memoria de reservas anteriores
+			if(pRepA_parallel[i] != NULL) free(pRepA_parallel[i]);
+			if(pRepB_parallel[i] != NULL) free(pRepB_parallel[i]);
+			if(minBitsPar[i] != NULL) free(minBitsPar[i]);
+		}
+		return NULL;
+	}
+
+	for(int i=0; i<kk; i++){
+		if(minBitsPar[i] != NULL){
+			R[i] = nuevoBitMap(maximalLevel+1, minBitsPar[i]);	
+			if(R[i] == NULL){
+				printf("Error! en reserva de misBits para resultado parcial R[%d].\n", i);
+				// Liberando memoria de reservas anteriores
+				for(int i=0; i<kk; i++){
+					if(pRepA_parallel[i] != NULL) free(pRepA_parallel[i]);
+					if(pRepB_parallel[i] != NULL) free(pRepB_parallel[i]);
+					if(minBitsPar[i] != NULL) free(minBitsPar[i]);
+					if(R[i] != NULL) destruirBitMap(R[i]);
 				}
-				printf("\n");
+				return  NULL;
 			}
 		}
-		printf("\n");
 	}
-		
-
-	/*						 FIN PRUEBA
-		PRUEBA PARA GENERAR POSICIONES DE SUB-ÁRBOLES Y MINIMOSBITS
-		EN UNA SOLA FUNCIÓN
-	*/
 
 	/*
 		3 - Ejecutar la operación en un for paralelo por cada sub-árbol
@@ -310,33 +224,18 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 	for(int i=0; i<kk; i++){
 		if(pRepA_parallel[i] != NULL && pRepB_parallel[i] != NULL){
 			resInter = intersectionOperation(1u, repA, repB, pRepA_parallel[i], pRepB_parallel[i], R[i]);
-		}else{
-			resInter = 0u;
-		}
-		setBit(R[i], 0, resInter);
-	}
-
-
-	printf("Comparando cantidad bits estimados máximos vs bits del resultado:\n");
-	for(int i=0; i<kk; i++){
-		if(minBitsPar[i]!=NULL){
-			for(int j=0; j<=maximalLevel; j++){
-				if(minBitsPar[i][j] < R[i]->n[j]){
-					printf("!!! minimos bits < resultado: subarbol: %d - nivel %d (%ld < %ld)\n", i, j, minBitsPar[i][j], R[i]->n[j]);
-				}
-			}
+			setBit(R[i], 0, resInter);
 		}
 	}
-	printf("\n");
 
 	/*
 		4 -	Unificar la estructura de los resultados en el resultado
 	*/
 	// La copia del resultado es bit a bit
 
-	minimosBits = (ulong *) malloc(sizeof(ulong));
-	minimosBits[0] = 0;
-	for(int i=0; i<=maximalLevel; i++){
+	ulong * minimosBits = (ulong *) malloc(sizeof(ulong));
+	minimosBits[0] = kk;
+	for(int i=1; i<=maximalLevel; i++){
 		for(int j=0; j<kk; j++){
 			if(R[j] != NULL){
 				minimosBits[0] += R[j]->n[i];
@@ -344,15 +243,30 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 		}
 	}
 
-	printf("minimosBits Resultado final: %ld\n", minimosBits[0]);
-
+	
 	misBits * Rfinal = nuevoBitMap(1, minimosBits);
 	if(Rfinal == NULL){
 		printf("Error! en reserva de misBits para resultado final.\n");
+		// Liberando memoria de reservas anteriores
+		for(int i=0; i<kk; i++){
+			if(pRepA_parallel[i] != NULL) free(pRepA_parallel[i]);
+			if(pRepB_parallel[i] != NULL) free(pRepB_parallel[i]);
+			if(minBitsPar[i] != NULL) free(minBitsPar[i]);
+			if(R[i] != NULL) destruirBitMap(R[i]);
+		}
 		return  NULL;
 	}
 
-	for(int i=0; i<=maximalLevel; i++){
+	for(int j=0; j<kk; j++){
+		if(R[j] != NULL){
+			for(int l=0; l<R[j]->n[0]; l++){
+				setBit(Rfinal, 0u, isBitSeted(R[j], 0, l));
+			}
+		}else{
+			setBit(Rfinal, 0u, 0u);
+		}
+	}
+	for(int i=1; i<=maximalLevel; i++){
 		for(int j=0; j<kk; j++){
 			if(R[j] != NULL){
 				for(int l=0; l<R[j]->n[i]; l++){
@@ -369,27 +283,17 @@ MREP * k2tree_intersection_parallel(MREP * repA, MREP * repB){
 		}
 	}
 
-	printf("Comparando bitmaps...\n");
-	if(C->cant != Rfinal->cant){
-		printf("Diferencia en cantidad de elementos\n");
-	}else{
-		printf("Misma cantidad de elementos (bits)\n");
-	}
-	for(int i=0; i<C->cant && i<Rfinal->cant; i++){
-		if(isBitSeted(C, 0u, i) != isBitSeted(Rfinal, 0u, i)){
-			printf("Diferencia en el bit %d\n", i);
-		}
-	}
-	if(edgesF != vinculolos){
-		printf("Diferente cantidad de edges.\n");
-	}else{
-		printf("Misma cantidad de edges!\n");
-	}
-
-
 	/*
 		5 -	Construir estructura con resultado final
 	*/
+
+	// Liberando memoria de reservas anteriores
+	for(int i=0; i<kk; i++){
+		if(pRepA_parallel[i] != NULL) free(pRepA_parallel[i]);
+		if(pRepB_parallel[i] != NULL) free(pRepB_parallel[i]);
+		if(minBitsPar[i] != NULL) free(minBitsPar[i]);
+		if(R[i] != NULL) destruirBitMap(R[i]);
+	}
 
 	return createFromBitmap(Rfinal, maximalLevel, numNodos, edgesF);
 
