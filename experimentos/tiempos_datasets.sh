@@ -10,11 +10,36 @@ FILE=${1}
 
 echo "Operación tradicional:" > ${FILE}
 for d in $DIRS; do
-    echo "n: ${d}" >> ${FILE}
+    echo "dataset: ${d}" >> ${FILE}
     for suf1 in $SUFFIXES; do
         for suf2 in $SUFFIXES; do
             ${CODE}/k2tree_setop_intersection ${DATA}/${d}/${d}${suf1} ${DATA}/${d}/${d}${suf2} borrar >> ${FILE}
         done
+        echo " " >> ${FILE}    
+    done
+    echo " " >> ${FILE}
+done
+
+echo "Operación estrategia sin paralelizar:" > ${FILE}
+for d in $DIRS; do
+    echo "dataset: ${d}" >> ${FILE}
+    for suf1 in $SUFFIXES; do
+        for suf2 in $SUFFIXES; do
+            ${CODE}/k2tree_setop_intersection_estrategiaparalela ${DATA}/${d}/${d}${suf1} ${DATA}/${d}/${d}${suf2} borrar >> ${FILE}
+        done
+        echo " " >> ${FILE}    
+    done
+    echo " " >> ${FILE}
+done
+
+echo "Operación en paralelo:" > ${FILE}
+for d in $DIRS; do
+    echo "dataset: ${d}" >> ${FILE}
+    for suf1 in $SUFFIXES; do
+        for suf2 in $SUFFIXES; do
+            ${CODE}/k2tree_setop_intersection_parallel ${DATA}/${d}/${d}${suf1} ${DATA}/${d}/${d}${suf2} borrar >> ${FILE}
+        done
+        echo " " >> ${FILE}    
     done
     echo " " >> ${FILE}
 done
