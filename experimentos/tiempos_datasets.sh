@@ -20,7 +20,7 @@ for d in $DIRS; do
     echo " " >> ${FILE}
 done
 
-echo "Operación estrategia sin paralelizar:" > ${FILE}
+echo "Operación estrategia sin paralelizar:" >> ${FILE}
 for d in $DIRS; do
     echo "dataset: ${d}" >> ${FILE}
     for suf1 in $SUFFIXES; do
@@ -32,7 +32,7 @@ for d in $DIRS; do
     echo " " >> ${FILE}
 done
 
-echo "Operación en paralelo:" > ${FILE}
+echo "Operación en paralelo:" >> ${FILE}
 for d in $DIRS; do
     echo "dataset: ${d}" >> ${FILE}
     for suf1 in $SUFFIXES; do
