@@ -21,7 +21,6 @@ k2tree_setop_intersection
 adylist_setop_intersection
 k2tree_setop_intersection_parallel
 k2tree_setop_intersection_estrategiaparalela
-*.kt
 *.rbfull
 *borrar*
 *.txt
