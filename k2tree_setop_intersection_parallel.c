@@ -21,17 +21,19 @@ int main(int argc, char * argv[]){
 	MREP * repA = loadRepresentation(argv[1]);
 	MREP * repB = loadRepresentation(argv[2]);
 	uint parLev = (uint) atoi(argv[3]);
-	if(parLev == 0){
-		parLev = 1;
-	}
 
 	// Variables para el control de tiempo y conteo de posibles errores
 	struct timeval t_ini;
 	struct timeval t_fin;
 	double milisecs = 0.0;
 	
+	MREP * result;
 	gettimeofday(&t_ini, NULL);
-	MREP * result = k2tree_intersection_parallel_main(repA, repB, parLev);
+	if(parLev != 0){
+		result = k2tree_intersection_parallel_main(repA, repB, parLev);
+	}else{
+		result = k2tree_intersection(repA, repB);
+	}
 	gettimeofday(&t_fin, NULL);
 	milisecs = ((double)(t_fin.tv_sec*1000 + (double)t_fin.tv_usec/1000) - 
 		    		(double)(t_ini.tv_sec*1000 + (double)t_ini.tv_usec/1000));
@@ -84,6 +86,7 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 	Se recibe un parámetro que indica hasta qué nivel se realizan llamadas en paralelo. A partir de ese nivel 
 	no se crean más hebras y el resultado se calcula como se hace en la propuesta secuencial oringinal.
 */	
+/*	
 	printf("--------------------------------------------\n");
 	printf("BitmapA: \n");
 	printBitmap(repA);
@@ -95,13 +98,13 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 	printf("\n");
 	printf("MaxLevel: %d - btl_len: %u - bt_len: %u \n", repB->maxLevel, repB->btl_len, repB->bt_len);
 	printf("--------------------------------------------\n");
-
+*/
 	uint kk = KK;
 	
 /*
 	1- Calcular dimensiones de arreglo para resultado de los niveles superiores.
 */
-	printf("En la función de preparación de resultados\n");
+//	printf("En la función de preparación de resultados\n");
 	uint maxBitsSup = 0;
 	uint numThreads = 1;
 	for(int i=1; i<=parLev; i++){
@@ -109,8 +112,8 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 		maxBitsSup += numThreads;
 	}
 	//numThreads *= kk;
-	printf("numThreads: %u\n", numThreads);
-	printf("maxBitsSup: %u\n", maxBitsSup);
+//	printf("numThreads: %u\n", numThreads);
+//	printf("maxBitsSup: %u\n", maxBitsSup);
 /*
 	2 - Estructura para solución en nodos superiores
 */
@@ -147,6 +150,7 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 
 	k2tree_intersection_parallel_sup(repA, repB, maxBitsSup, resSup, resInf, 0u, 0u, 0u, 0u);
 
+/*
 	// RESULTADOS DE LA OPERACIÓN
 	printf("Uniendo los resultados.\n");
 	printf("Resultado superior:\n");
@@ -182,6 +186,7 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 		}
 	}
 	printf("\n");
+*/
 
 /*
 	5 - Unificación de los resultados en una estructura
@@ -190,7 +195,7 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 	// 5.a - Conteo de bits necesarios resultado superior
 	uint bloquesActivos = 0;
 	uint maxbloquesActivos = maxBitsSup / kk;
-	printf("maxbloquesActivos: %u\n", maxbloquesActivos);
+//	printf("maxbloquesActivos: %u\n", maxbloquesActivos);
 
 	uint* posbloquesActivos = (uint *) malloc(sizeof(unsigned int) * (maxbloquesActivos));
 	for(int i=0; i<maxBitsSup; i+=kk){
@@ -248,6 +253,23 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 	6 - Liberar memoria de estructuras temporales
 */
 
+	for(int i=0; i<maxBitsSup; i++){
+		free(resSup[i]);
+	}
+	free(resSup);
+	
+	for(int i=0; i<numThreads; i++){
+		destruirBitMap(resInf[i]);
+	}
+	free(resInf);
+
+	free(posbloquesActivos);
+
+	free(posMisBitsActivos);
+
+	free(totalBits);
+
+/*
 	for(int i=0; i<C->cant; i+=kk){
 		for(int j=0; j<kk; j++){
 			printf("%u", isBitSeted(C,0u,i+j));
@@ -256,7 +278,7 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 	}
 	printf("\n");
 	printf("numEdgesRes: %u\n", numEdgesRes);
-
+*/
 	return res;
 }
 
@@ -286,12 +308,12 @@ ulong* posicionesRamaYEstimaRes(MREP* A, MREP* B, ulong* posA, ulong* posB, ulon
 		pA = posNodoHijo(A, pA);
 		pB = posNodoHijo(B, pB);
 	}
-
+/*
 	for(int i=0; i<levels; i++){
 		printf("pA: %lu - pB: %lu - bitsResultado: %lu\n", posA[i], posB[i], bistResInterseccion[i]);		
 	}
-	
 	printf("Levels: %d\n", levels);
+*/
 	return bistResInterseccion;
 }
 
@@ -340,16 +362,16 @@ uint k2tree_intersection_parallel_sup(MREP * repA, MREP * repB, uint infLen, int
 	// si aún están en el rango de nodos superiores o son inferiores. Si son nodos inferiores 
 	// se realizan los cálculos de posiciones en el subárbol correspondiente y se llama la función
 	// tradicional usando la estructura <resInf>
-printf("par_sup -> pA: %lu - pB: %lu - actPos: %u - infLen: %u\n", pA, pB, actPos, infLen);
+//printf("par_sup -> pA: %lu - pB: %lu - actPos: %u - infLen: %u\n", pA, pB, actPos, infLen);
 /*
 	1 - Si <actPos> corresponde a un nodo inferior
 	Calcular posiciones iniciales de los dos subárboles y estimación de largo por nivel para el resultado.
 */
 	if(actPos >= infLen){
-		printf("kk:%d\n", KK);
+//		printf("kk:%d\n", KK);
 		uint aaux = KK;
 		uint pResInf = (actPos - infLen) / aaux;
-		printf("----pResInf: %u\n", pResInf);
+//		printf("----pResInf: %u\n", pResInf);
 		int cantLevels = repA->maxLevel - level + 1;
 		ulong* posA = (ulong*) malloc(sizeof(unsigned long) * cantLevels);
 		if(posA == NULL){
@@ -365,7 +387,11 @@ printf("par_sup -> pA: %lu - pB: %lu - actPos: %u - infLen: %u\n", pA, pB, actPo
 			printf("Error! En la construcción de misbitses\n");
 			return 0;
 		}
-		return k2tree_intersection_parallel_inf(repA, repB, resInf[pResInf], posA, posB, 0u, cantLevels-1);
+		uint r = k2tree_intersection_parallel_inf(repA, repB, resInf[pResInf], posA, posB, 0u, cantLevels-1);
+		free(posA);
+		free(posB);
+		free(bitsRes);
+		return r;
 	}
 
 /*
@@ -374,7 +400,7 @@ printf("par_sup -> pA: %lu - pB: %lu - actPos: %u - infLen: %u\n", pA, pB, actPo
 */
 	int unos = 0;
 	for(int i=0; i<KK; i++){
-		printf("i: %d - bits - A: %u - B: %u\n", i, isBitSet(repA->btl, pA+i), isBitSet(repB->btl, pB+i));
+//		printf("i: %d - bits - A: %u - B: %u\n", i, isBitSet(repA->btl, pA+i), isBitSet(repB->btl, pB+i));
 		if(isBitSet(repA->btl, pA+i) && isBitSet(repB->btl, pB+i)){
 			uint pAhijo = posNodoHijo(repA, pA+i);
 			uint pBhijo = posNodoHijo(repB, pB+i);
@@ -387,6 +413,23 @@ printf("par_sup -> pA: %lu - pB: %lu - actPos: %u - infLen: %u\n", pA, pB, actPo
 		return 1u;
 	}
 	return 0u;
+}
+
+void SkipNodes_parallel(uint l, MREP * X, ulong * pX, ulong s, uint maximalLevel){
+	// actualiza los valores de pX desde el nivel l en la representación X
+	// según la cantidad s de blqoues a considerar.
+	ulong newPos = pX[l]+s*K*K-1;
+	uint nOnes=0;
+	
+	if(l < maximalLevel){
+		nOnes = rank(X->btl, newPos) - rank(X->btl, pX[l] - 1);
+	}
+	
+	pX[l] = newPos + 1;
+	
+	if(nOnes > 0){
+		SkipNodes_parallel(l+1, X, pX, nOnes, maximalLevel);
+	}
 }
 
 
@@ -405,10 +448,10 @@ uint k2tree_intersection_parallel_inf(MREP * A, MREP * B, misBits* C, ulong* pA,
 			else{
 				t[i] = 0u;
 				if(isBitSet(A->btl, pA[level])){
-					SkipNodes(level+1, A, pA, 1u);
+					SkipNodes_parallel(level+1, A, pA, 1u, maximalLevel);
 				}
 				if(isBitSet(B->btl, pB[level])){
-					SkipNodes(level+1, B, pB, 1u);
+					SkipNodes_parallel(level+1, B, pB, 1u, maximalLevel);
 				}
 			}
 		}
@@ -420,11 +463,10 @@ uint k2tree_intersection_parallel_inf(MREP * A, MREP * B, misBits* C, ulong* pA,
 		pB[level] = pB[level]+1;
 	}
 
-	if(writesomething == 1u || level==0){
+	if(writesomething == 1u){
 		for(i=0; i<KK; i++){
 			setBit(C, level, t[i]);
-		}		
-		printf("++++ ");
+		}
 	}
 
 	return (writesomething==1u)?1u:0u;
