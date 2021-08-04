@@ -96,6 +96,8 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 	printf("MaxLevel: %d - btl_len: %u - bt_len: %u \n", repB->maxLevel, repB->btl_len, repB->bt_len);
 	printf("--------------------------------------------\n");
 
+	uint kk = KK;
+	
 /*
 	1- Calcular dimensiones de arreglo para resultado de los niveles superiores.
 */
@@ -103,10 +105,10 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 	uint maxBitsSup = 0;
 	uint numThreads = 1;
 	for(int i=1; i<=parLev; i++){
-		numThreads *= KK;
+		numThreads *= kk;
 		maxBitsSup += numThreads;
 	}
-	//numThreads *= KK;
+	//numThreads *= kk;
 	printf("numThreads: %u\n", numThreads);
 	printf("maxBitsSup: %u\n", maxBitsSup);
 /*
@@ -145,19 +147,18 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 
 	k2tree_intersection_parallel_sup(repA, repB, maxBitsSup, resSup, resInf, 0u, 0u, 0u, 0u);
 
-/*
-	5 - Unificación de los resultados en una estructura
-*/
+	// RESULTADOS DE LA OPERACIÓN
 	printf("Uniendo los resultados.\n");
 	printf("Resultado superior:\n");
-	for(int i=0; i<maxBitsSup; i+=KK){
-		for(int j=0; j<KK; j++){
+	for(int i=0; i<maxBitsSup; i+=kk){
+		for(int j=0; j<kk; j++){
 			printf("%u", *(resSup[i+j]));
 		}
 		printf(" ");
 	}
 	printf("\n");
 	printf("Resultado inferior:\n");
+	printf("-  cant  niveles  tam  numEdges\n");
 	for(int j=0; j<numThreads; j++){
 		if(resInf[j]->cant > 0){
 			printf("%u: %lu - %u - %lu - %lu - bits_x_niveles: ", j, resInf[j]->cant, resInf[j]->niveles, resInf[j]->tam, resInf[j]->numEdges);
@@ -171,8 +172,8 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 	for(int i=parLev; i<=repA->maxLevel; i++){
 		for(int j=0; j<numThreads; j++){
 			if(resInf[j]->cant > 0){
-				for(int k=0; k<resInf[j]->n[i-parLev]; k+=KK){
-					for(int m=0; m<KK; m++){
+				for(int k=0; k<resInf[j]->n[i-parLev]; k+=kk){
+					for(int m=0; m<kk; m++){
 						printf("%u", isBitSeted(resInf[j], i-parLev, m+k));
 					}
 					printf(" ");
@@ -181,7 +182,82 @@ MREP * k2tree_intersection_parallel_main(MREP * repA, MREP * repB, uint parLev){
 		}
 	}
 	printf("\n");
-	return NULL;
+
+/*
+	5 - Unificación de los resultados en una estructura
+*/
+
+	// 5.a - Conteo de bits necesarios resultado superior
+	uint bloquesActivos = 0;
+	uint maxbloquesActivos = maxBitsSup / kk;
+	printf("maxbloquesActivos: %u\n", maxbloquesActivos);
+
+	uint* posbloquesActivos = (uint *) malloc(sizeof(unsigned int) * (maxbloquesActivos));
+	for(int i=0; i<maxBitsSup; i+=kk){
+		uint bitsNodo = 0;
+		for(int j=0; j<kk; j++){
+			bitsNodo += *(resSup[i+j]);
+		}
+		if(bitsNodo > 0){
+			posbloquesActivos[bloquesActivos] = i;
+			bloquesActivos++;
+		}
+	}
+
+	uint bitsSuperior = bloquesActivos * kk;
+	
+	// 5.b - Conteo de bits necesarios resultado inferior
+	uint misBitsActivos = 0;
+	uint* posMisBitsActivos = (uint *) malloc(sizeof(uint) * numThreads);
+	uint bitsInferior = 0;
+	uint numEdgesRes = 0;
+	for(int j=0; j<numThreads; j++){
+		if(resInf[j]->cant > 0){
+			posMisBitsActivos[misBitsActivos] = j;
+			misBitsActivos++;
+			bitsInferior += resInf[j]->cant;
+			numEdgesRes += resInf[j]->numEdges;
+		}
+	}
+
+	// 5.c - Crear estructura definitiva y unificar los resultados
+	// 		Crear estructura con 1 nivel para unir todos los resultados
+	ulong* totalBits = (ulong*) malloc(sizeof(unsigned long));
+	*totalBits = bitsSuperior + bitsInferior;
+	misBits* C = nuevoBitMap(1, totalBits);
+	//		Pasar los resultados de niveles superiores
+	for(int i=0; i<bloquesActivos; i++){
+		for(int j=0; j<kk; j++){
+			setBit(C, 0u, *(resSup[posbloquesActivos[i]+j]));
+		}
+	}
+	//		Pasar los resultados de niveles inferiores
+	for(int i=parLev; i<=repA->maxLevel; i++){
+		for(int j=0; j<misBitsActivos; j++){
+			for(int k=0; k<resInf[posMisBitsActivos[j]]->n[i-parLev]; k+=kk){
+				for(int m=0; m<kk; m++){
+					setBit(C, 0u, isBitSeted(resInf[posMisBitsActivos[j]], i-parLev, m+k));
+				}
+			}
+		}
+	}
+	//		Construir estructura final
+	MREP* res = createFromBitmap(C, repA->maxLevel, repA->numberOfNodes, numEdgesRes);
+
+/*
+	6 - Liberar memoria de estructuras temporales
+*/
+
+	for(int i=0; i<C->cant; i+=kk){
+		for(int j=0; j<kk; j++){
+			printf("%u", isBitSeted(C,0u,i+j));
+		}
+		printf("  ");
+	}
+	printf("\n");
+	printf("numEdgesRes: %u\n", numEdgesRes);
+
+	return res;
 }
 
 
