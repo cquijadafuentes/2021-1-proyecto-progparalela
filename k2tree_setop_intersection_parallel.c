@@ -363,13 +363,15 @@ uint k2tree_intersection_parallel_sup(MREP * repA, MREP * repB, uint infLen, int
 	// se realizan los cálculos de posiciones en el subárbol correspondiente y se llama la función
 	// tradicional usando la estructura <resInf>
 //printf("par_sup -> pA: %lu - pB: %lu - actPos: %u - infLen: %u\n", pA, pB, actPos, infLen);
+	int kk = KK;
+
 /*
 	1 - Si <actPos> corresponde a un nodo inferior
 	Calcular posiciones iniciales de los dos subárboles y estimación de largo por nivel para el resultado.
 */
 	if(actPos >= infLen){
-//		printf("kk:%d\n", KK);
-		uint aaux = KK;
+//		printf("kk:%d\n", kk);
+		uint aaux = kk;
 		uint pResInf = (actPos - infLen) / aaux;
 //		printf("----pResInf: %u\n", pResInf);
 		int cantLevels = repA->maxLevel - level + 1;
@@ -398,18 +400,27 @@ uint k2tree_intersection_parallel_sup(MREP * repA, MREP * repB, uint infLen, int
 	2 - Si <actPos> corresponde a un nodo superior
 	Verificar que el resultado podría exisitr (ambos bits son 1) y si es así hacer llamada para calcular hijos
 */
-	int unos = 0;
-	for(int i=0; i<KK; i++){
+	int** unos = (int**) malloc(sizeof(int*)*kk);
+	for(int i=0; i<kk; i++){
+		unos[i] = (int*) malloc(sizeof(int));
+		*(unos[i]) = 0;
+	}
+	#pragma omp parallel for
+	for(int i=0; i<kk; i++){
 //		printf("i: %d - bits - A: %u - B: %u\n", i, isBitSet(repA->btl, pA+i), isBitSet(repB->btl, pB+i));
 		if(isBitSet(repA->btl, pA+i) && isBitSet(repB->btl, pB+i)){
 			uint pAhijo = posNodoHijo(repA, pA+i);
 			uint pBhijo = posNodoHijo(repB, pB+i);
-			uint actPosHijo = (actPos + i + 1) * KK;
+			uint actPosHijo = (actPos + i + 1) * kk;
 			*(resSup[actPos+i]) = k2tree_intersection_parallel_sup(repA, repB, infLen, resSup, resInf, actPosHijo, pAhijo, pBhijo, level+1);
-			unos += *(resSup[actPos+i]);
+			*(unos[i]) = *(resSup[actPos+i]);
 		}
 	}
-	if(unos > 0){
+	int sum = 0;
+	for(int i=0; i<kk; i++){
+		sum += *(unos[i]);
+	}
+	if(sum > 0){
 		return 1u;
 	}
 	return 0u;
