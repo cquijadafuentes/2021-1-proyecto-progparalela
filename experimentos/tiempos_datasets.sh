@@ -24,13 +24,17 @@ done
 
 echo "------------------------------------------------------" >> ${FILE}
 echo "Operación estrategia sin paralelizar:" >> ${FILE}
-for d in $DIRS; do
-    echo "dataset: ${d}" >> ${FILE}
-    for suf1 in $SUFFIXES; do
-        for suf2 in $SUFFIXES; do
-            ${CODE}/k2tree_setop_intersection_estrategiaparalela ${DATA}/${d}/${d}${suf1} ${DATA}/${d}/${d}${suf2} borrar >> ${FILE}
+for l in $LEVELS; do
+    echo "level: ${l}" >> ${FILE}
+    for d in $DIRS; do
+        echo "dataset: ${d}" >> ${FILE}
+        for suf1 in $SUFFIXES; do
+            for suf2 in $SUFFIXES; do
+                ${CODE}/k2tree_setop_intersection_estrategiaparalela ${DATA}/${d}/${d}${suf1} ${DATA}/${d}/${d}${suf2} ${l} borrar >> ${FILE}
+            done
+            echo " " >> ${FILE}    
         done
-        echo " " >> ${FILE}    
+        echo " " >> ${FILE}
     done
     echo " " >> ${FILE}
 done
